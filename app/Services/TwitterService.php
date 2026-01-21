@@ -19,14 +19,20 @@ class TwitterService
         $this->accessTokenSecret = config('services.twitter.access_token_secret');
     }
 
-    public function tweet(string $text): array
+    public function tweet(string $text, ?string $replyTo = null): array
     {
         $url = 'https://api.twitter.com/2/tweets';
+
+        $payload = ['text' => $text];
+
+        if ($replyTo) {
+            $payload['reply'] = ['in_reply_to_tweet_id' => $replyTo];
+        }
 
         $response = Http::withHeaders([
             'Authorization' => $this->getOAuthHeader('POST', $url),
             'Content-Type' => 'application/json',
-        ])->post($url, ['text' => $text]);
+        ])->post($url, $payload);
 
         return $response->json() ?? ['error' => 'Empty response'];
     }

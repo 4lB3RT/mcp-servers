@@ -41,11 +41,12 @@ class McpServerCommand extends Command
             $this->tools = [
                 'tweet' => [
                     'name' => 'tweet',
-                    'description' => 'Post a tweet to Twitter/X',
+                    'description' => 'Post a tweet to Twitter/X. Use reply_to to reply to a specific tweet (thread).',
                     'inputSchema' => [
                         'type' => 'object',
                         'properties' => [
                             'text' => ['type' => 'string', 'description' => 'Tweet content (max 280 chars)'],
+                            'reply_to' => ['type' => 'string', 'description' => 'Tweet ID to reply to (for threads)'],
                         ],
                         'required' => ['text'],
                     ],
@@ -106,7 +107,7 @@ class McpServerCommand extends Command
             $twitter = app(TwitterService::class);
 
             $result = match ($toolName) {
-                'tweet' => $twitter->tweet($arguments['text']),
+                'tweet' => $twitter->tweet($arguments['text'], $arguments['reply_to'] ?? null),
                 'get_timeline' => $twitter->getTimeline($arguments['max_results'] ?? 10),
                 'get_my_tweets' => $twitter->getMyTweets($arguments['max_results'] ?? 10),
                 default => ['error' => 'Tool not implemented'],
