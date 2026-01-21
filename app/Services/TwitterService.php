@@ -10,7 +10,6 @@ class TwitterService
     private string $apiSecret;
     private string $accessToken;
     private string $accessTokenSecret;
-    private string $bearerToken;
 
     public function __construct()
     {
@@ -18,28 +17,37 @@ class TwitterService
         $this->apiSecret = config('services.twitter.api_secret');
         $this->accessToken = config('services.twitter.access_token');
         $this->accessTokenSecret = config('services.twitter.access_token_secret');
-        $this->bearerToken = config('services.twitter.bearer_token');
     }
 
     public function tweet(string $text): array
     {
-        $response = Http::withToken($this->bearerToken)
-            ->withHeaders($this->getOAuthHeaders('POST', 'https://api.twitter.com/2/tweets', ['text' => $text]))
-            ->post('https://api.twitter.com/2/tweets', [
-                'text' => $text,
-            ]);
+        $url = 'https://api.twitter.com/2/tweets';
 
-        return $response->json();
+        $response = Http::withHeaders([
+            'Authorization' => $this->getOAuthHeader('POST', $url),
+            'Content-Type' => 'application/json',
+        ])->post($url, ['text' => $text]);
+
+        return $response->json() ?? ['error' => 'Empty response'];
     }
 
     public function getTimeline(int $maxResults = 10): array
     {
-        $response = Http::withToken($this->bearerToken)
-            ->get('https://api.twitter.com/2/users/me/timelines/reverse_chronological', [
-                'max_results' => $maxResults,
-            ]);
+        $me = $this->getMe();
+        $userId = $me['data']['id'] ?? null;
 
-        return $response->json();
+        if (!$userId) {
+            return ['error' => 'Could not get user ID', 'details' => $me];
+        }
+
+        $url = "https://api.twitter.com/2/users/{$userId}/reverse_chronological_timeline";
+        $params = ['max_results' => $maxResults];
+
+        $response = Http::withHeaders([
+            'Authorization' => $this->getOAuthHeader('GET', $url, $params),
+        ])->get($url, $params);
+
+        return $response->json() ?? ['error' => 'Empty response'];
     }
 
     public function getMyTweets(int $maxResults = 10): array
@@ -48,26 +56,31 @@ class TwitterService
         $userId = $me['data']['id'] ?? null;
 
         if (!$userId) {
-            return ['error' => 'Could not get user ID'];
+            return ['error' => 'Could not get user ID', 'details' => $me];
         }
 
-        $response = Http::withToken($this->bearerToken)
-            ->get("https://api.twitter.com/2/users/{$userId}/tweets", [
-                'max_results' => $maxResults,
-            ]);
+        $url = "https://api.twitter.com/2/users/{$userId}/tweets";
+        $params = ['max_results' => $maxResults];
 
-        return $response->json();
+        $response = Http::withHeaders([
+            'Authorization' => $this->getOAuthHeader('GET', $url, $params),
+        ])->get($url, $params);
+
+        return $response->json() ?? ['error' => 'Empty response'];
     }
 
     public function getMe(): array
     {
-        $response = Http::withToken($this->bearerToken)
-            ->get('https://api.twitter.com/2/users/me');
+        $url = 'https://api.twitter.com/2/users/me';
 
-        return $response->json();
+        $response = Http::withHeaders([
+            'Authorization' => $this->getOAuthHeader('GET', $url),
+        ])->get($url);
+
+        return $response->json() ?? ['error' => 'Empty response'];
     }
 
-    private function getOAuthHeaders(string $method, string $url, array $params = []): array
+    private function getOAuthHeader(string $method, string $url, array $queryParams = []): string
     {
         $oauth = [
             'oauth_consumer_key' => $this->apiKey,
@@ -78,20 +91,21 @@ class TwitterService
             'oauth_version' => '1.0',
         ];
 
-        $baseParams = array_merge($oauth, $params);
-        ksort($baseParams);
+        // For signature, include query params but NOT body params for POST with JSON
+        $signatureParams = array_merge($oauth, $queryParams);
+        ksort($signatureParams);
 
-        $baseString = $method . '&' . rawurlencode($url) . '&' . rawurlencode(http_build_query($baseParams));
+        $paramString = http_build_query($signatureParams, '', '&', PHP_QUERY_RFC3986);
+        $baseString = strtoupper($method) . '&' . rawurlencode($url) . '&' . rawurlencode($paramString);
+
         $signingKey = rawurlencode($this->apiSecret) . '&' . rawurlencode($this->accessTokenSecret);
         $oauth['oauth_signature'] = base64_encode(hash_hmac('sha1', $baseString, $signingKey, true));
 
-        $authHeader = 'OAuth ';
         $parts = [];
         foreach ($oauth as $key => $value) {
             $parts[] = rawurlencode($key) . '="' . rawurlencode($value) . '"';
         }
-        $authHeader .= implode(', ', $parts);
 
-        return ['Authorization' => $authHeader];
+        return 'OAuth ' . implode(', ', $parts);
     }
 }
