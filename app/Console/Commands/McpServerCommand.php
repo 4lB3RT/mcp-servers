@@ -89,7 +89,7 @@ class McpServerCommand extends Command
             'tools/list' => $this->success($id, ['tools' => array_values($this->tools)]),
             'tools/call' => $this->handleToolCall($id, $params),
             'ping' => $this->success($id, ['pong' => true]),
-            default => $this->error($id, -32601, "Method not found: {$method}"),
+            default => $this->errorResponse($id, -32601, "Method not found: {$method}"),
         };
     }
 
@@ -99,7 +99,7 @@ class McpServerCommand extends Command
         $arguments = $params['arguments'] ?? [];
 
         if (!isset($this->tools[$toolName])) {
-            return $this->error($id, -32602, "Unknown tool: {$toolName}");
+            return $this->errorResponse($id, -32602, "Unknown tool: {$toolName}");
         }
 
         try {
@@ -116,7 +116,7 @@ class McpServerCommand extends Command
                 'content' => [['type' => 'text', 'text' => json_encode($result, JSON_PRETTY_PRINT)]],
             ]);
         } catch (\Throwable $e) {
-            return $this->error($id, -32603, $e->getMessage());
+            return $this->errorResponse($id, -32603, $e->getMessage());
         }
     }
 
@@ -125,7 +125,7 @@ class McpServerCommand extends Command
         return ['jsonrpc' => '2.0', 'id' => $id, 'result' => $result];
     }
 
-    private function error(mixed $id, int $code, string $message): array
+    private function errorResponse(mixed $id, int $code, string $message): array
     {
         return ['jsonrpc' => '2.0', 'id' => $id, 'error' => ['code' => $code, 'message' => $message]];
     }
@@ -138,7 +138,7 @@ class McpServerCommand extends Command
 
     private function sendError(int $code, string $message): void
     {
-        $this->send($this->error(null, $code, $message));
+        $this->send($this->errorResponse(null, $code, $message));
     }
 
     private function log(string $message): void
