@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "twitter": {
+      "command": "php",
+      "args": ["/Users/albert/projects/mcp-servers/artisan", "mcp:serve", "--server=twitter"]
+    }
+  }
+}
