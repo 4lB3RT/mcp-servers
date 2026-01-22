@@ -178,6 +178,18 @@ class McpServerCommand extends Command
                         'required' => ['title', 'description', 'parent_step'],
                     ],
                 ],
+                'move_task_status' => [
+                    'name' => 'move_task_status',
+                    'description' => 'Move a task to a different status column in the Tareas board',
+                    'inputSchema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'issue_number' => ['type' => 'integer', 'description' => 'Task issue number'],
+                            'status' => ['type' => 'string', 'description' => 'New status: todo, doing, review, done'],
+                        ],
+                        'required' => ['issue_number', 'status'],
+                    ],
+                ],
             ];
         }
     }
@@ -249,6 +261,10 @@ class McpServerCommand extends Command
                     $arguments['description'],
                     $arguments['parent_step'],
                     $arguments['priority'] ?? 'medium'
+                ),
+                'move_task_status' => app(GitHubService::class)->moveTaskToStatus(
+                    $arguments['issue_number'],
+                    $arguments['status']
                 ),
                 default => ['error' => 'Tool not implemented'],
             };

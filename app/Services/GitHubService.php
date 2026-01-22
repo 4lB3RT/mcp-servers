@@ -14,6 +14,15 @@ class GitHubService
     private const STEPS_PROJECT_ID = 'PVT_kwHOAV6_6M4BNKam';
     private const TAREAS_PROJECT_ID = 'PVT_kwHOAV6_6M4BNKbM';
 
+    // Tareas board Status field
+    private const TAREAS_STATUS_FIELD_ID = 'PVTSSF_lAHOAV6_6M4BNKbMzg8POxU';
+    private const TAREAS_STATUS_OPTIONS = [
+        'todo' => '91c009c4',
+        'doing' => '545952ab',
+        'review' => '4ff2a434',
+        'done' => 'fecf69ef',
+    ];
+
     public function __construct()
     {
         $this->token = config('services.github.token');
@@ -182,6 +191,82 @@ class GitHubService
         ])->post('https://api.github.com/graphql', ['query' => $mutation]);
 
         return $response->json() ?? ['error' => 'Empty response'];
+    }
+
+    public function getProjectItemId(int $issueNumber): ?string
+    {
+        $issue = $this->getIssue($issueNumber);
+        if (!isset($issue['node_id'])) {
+            return null;
+        }
+
+        $nodeId = $issue['node_id'];
+
+        $query = "query {
+            node(id: \"{$nodeId}\") {
+                ... on Issue {
+                    projectItems(first: 10) {
+                        nodes {
+                            id
+                            project { id }
+                        }
+                    }
+                }
+            }
+        }";
+
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$this->token}",
+        ])->post('https://api.github.com/graphql', ['query' => $query]);
+
+        $data = $response->json();
+        $items = $data['data']['node']['projectItems']['nodes'] ?? [];
+
+        foreach ($items as $item) {
+            if ($item['project']['id'] === self::TAREAS_PROJECT_ID) {
+                return $item['id'];
+            }
+        }
+
+        return null;
+    }
+
+    public function moveTaskToStatus(int $issueNumber, string $status): array
+    {
+        $status = strtolower($status);
+        if (!isset(self::TAREAS_STATUS_OPTIONS[$status])) {
+            return ['error' => "Invalid status: {$status}. Valid: todo, doing, review, done"];
+        }
+
+        $itemId = $this->getProjectItemId($issueNumber);
+        if (!$itemId) {
+            return ['error' => "Task #{$issueNumber} not found in Tareas board"];
+        }
+
+        $optionId = self::TAREAS_STATUS_OPTIONS[$status];
+
+        $mutation = "mutation {
+            updateProjectV2ItemFieldValue(input: {
+                projectId: \"" . self::TAREAS_PROJECT_ID . "\"
+                itemId: \"{$itemId}\"
+                fieldId: \"" . self::TAREAS_STATUS_FIELD_ID . "\"
+                value: { singleSelectOptionId: \"{$optionId}\" }
+            }) {
+                projectV2Item { id }
+            }
+        }";
+
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$this->token}",
+        ])->post('https://api.github.com/graphql', ['query' => $mutation]);
+
+        $result = $response->json();
+
+        if (isset($result['data']['updateProjectV2ItemFieldValue'])) {
+            return ['success' => true, 'status' => $status, 'issue' => $issueNumber];
+        }
+
+        return $result;
     }
 
     private function getHeaders(): array
