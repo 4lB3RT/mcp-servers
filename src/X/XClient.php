@@ -1,25 +1,29 @@
 <?php
 
-namespace App\Services;
+declare(strict_types=1);
 
-use Illuminate\Support\Facades\Http;
+namespace App\X;
 
-class TwitterService
+use GuzzleHttp\Client;
+
+class XClient
 {
     private string $apiKey;
     private string $apiSecret;
     private string $accessToken;
     private string $accessTokenSecret;
+    private Client $http;
 
     public function __construct()
     {
-        $this->apiKey = config('services.twitter.api_key');
-        $this->apiSecret = config('services.twitter.api_secret');
-        $this->accessToken = config('services.twitter.access_token');
-        $this->accessTokenSecret = config('services.twitter.access_token_secret');
+        $this->apiKey = $_ENV['TWITTER_API_KEY'];
+        $this->apiSecret = $_ENV['TWITTER_API_SECRET'];
+        $this->accessToken = $_ENV['TWITTER_ACCESS_TOKEN'];
+        $this->accessTokenSecret = $_ENV['TWITTER_ACCESS_TOKEN_SECRET'];
+        $this->http = new Client(['timeout' => 15]);
     }
 
-    public function tweet(string $text, ?string $replyTo = null): array
+    public function post(string $text, ?string $replyTo = null): array
     {
         $url = 'https://api.twitter.com/2/tweets';
 
@@ -29,12 +33,15 @@ class TwitterService
             $payload['reply'] = ['in_reply_to_tweet_id' => $replyTo];
         }
 
-        $response = Http::timeout(15)->withHeaders([
-            'Authorization' => $this->getOAuthHeader('POST', $url),
-            'Content-Type' => 'application/json',
-        ])->post($url, $payload);
+        $response = $this->http->post($url, [
+            'headers' => [
+                'Authorization' => $this->getOAuthHeader('POST', $url),
+                'Content-Type' => 'application/json',
+            ],
+            'json' => $payload,
+        ]);
 
-        return $response->json() ?? ['error' => 'Empty response'];
+        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
     }
 
     public function getTimeline(int $maxResults = 10): array
@@ -49,14 +56,17 @@ class TwitterService
         $url = "https://api.twitter.com/2/users/{$userId}/reverse_chronological_timeline";
         $params = ['max_results' => $maxResults];
 
-        $response = Http::timeout(15)->withHeaders([
-            'Authorization' => $this->getOAuthHeader('GET', $url, $params),
-        ])->get($url, $params);
+        $response = $this->http->get($url, [
+            'headers' => [
+                'Authorization' => $this->getOAuthHeader('GET', $url, $params),
+            ],
+            'query' => $params,
+        ]);
 
-        return $response->json() ?? ['error' => 'Empty response'];
+        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
     }
 
-    public function getMyTweets(int $maxResults = 10): array
+    public function getMyPosts(int $maxResults = 10): array
     {
         $me = $this->getMe();
         $userId = $me['data']['id'] ?? null;
@@ -68,22 +78,27 @@ class TwitterService
         $url = "https://api.twitter.com/2/users/{$userId}/tweets";
         $params = ['max_results' => $maxResults];
 
-        $response = Http::timeout(15)->withHeaders([
-            'Authorization' => $this->getOAuthHeader('GET', $url, $params),
-        ])->get($url, $params);
+        $response = $this->http->get($url, [
+            'headers' => [
+                'Authorization' => $this->getOAuthHeader('GET', $url, $params),
+            ],
+            'query' => $params,
+        ]);
 
-        return $response->json() ?? ['error' => 'Empty response'];
+        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
     }
 
     public function getMe(): array
     {
         $url = 'https://api.twitter.com/2/users/me';
 
-        $response = Http::timeout(15)->withHeaders([
-            'Authorization' => $this->getOAuthHeader('GET', $url),
-        ])->get($url);
+        $response = $this->http->get($url, [
+            'headers' => [
+                'Authorization' => $this->getOAuthHeader('GET', $url),
+            ],
+        ]);
 
-        return $response->json() ?? ['error' => 'Empty response'];
+        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
     }
 
     private function getOAuthHeader(string $method, string $url, array $queryParams = []): string
@@ -97,7 +112,6 @@ class TwitterService
             'oauth_version' => '1.0',
         ];
 
-        // For signature, include query params but NOT body params for POST with JSON
         $signatureParams = array_merge($oauth, $queryParams);
         ksort($signatureParams);
 

@@ -1,26 +1,24 @@
 # MCP Servers
 
-Collection of MCP (Model Context Protocol) servers for Claude Code integration.
+Unified MCP (Model Context Protocol) server for Claude Code integration.
 
 ![PHP](https://img.shields.io/badge/PHP-8.4%2B-blue?style=flat-square)
-![Laravel](https://img.shields.io/badge/Laravel-12.x-red?style=flat-square)
+![MCP SDK](https://img.shields.io/badge/mcp%2Fsdk-0.4-green?style=flat-square)
 
 ---
 
-## Available Servers
+## Available Tools
 
-### Twitter MCP
-Post tweets and read your timeline directly from Claude Code.
+### X
+Post and read your timeline directly from Claude Code.
 
-**Tools:**
-- `tweet` - Post a tweet to Twitter/X (supports `reply_to` for threads)
-- `get_timeline` - Get your home timeline
-- `get_my_tweets` - Get your own tweets
+- `tweet` — Post to X (supports `reply_to` for threads)
+- `get_timeline` — Get your home timeline
+- `get_my_tweets` — Get your own posts
 
-### GitHub MCP
+### GitHub
 Manage GitHub issues and project boards directly from Claude Code.
 
-**Tools:**
 - `create_issue` — Create a new GitHub issue with optional labels
 - `list_issues` — List issues (filter by state, labels)
 - `get_issue` — Get a specific issue by number
@@ -45,19 +43,17 @@ composer install
 
 ```bash
 cp .env.example .env
-php artisan key:generate
 ```
 
 ### 3. Add API credentials
 
-**Twitter** — Get your credentials from [Twitter Developer Portal](https://developer.twitter.com/):
+**X** — Get your credentials from [X Developer Portal](https://developer.x.com/):
 
 ```env
 TWITTER_API_KEY=your_api_key
 TWITTER_API_SECRET=your_api_secret
 TWITTER_ACCESS_TOKEN=your_access_token
 TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret
-TWITTER_BEARER_TOKEN=your_bearer_token
 ```
 
 **GitHub** — Create a [Personal Access Token](https://github.com/settings/tokens) with `repo` and `project` scopes:
@@ -70,18 +66,14 @@ GITHUB_REPO=your_repo_name
 
 ### 4. Configure Claude Code
 
-Add to your Claude Code MCP settings (`~/.claude/.mcp.json`):
+Add to `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
-    "twitter": {
+    "social": {
       "command": "php",
-      "args": ["/path/to/mcp-servers/artisan", "mcp:serve", "--server=twitter"]
-    },
-    "github": {
-      "command": "php",
-      "args": ["/path/to/mcp-servers/artisan", "mcp:serve", "--server=github"]
+      "args": ["/path/to/mcp-servers/server.php"]
     }
   }
 }
@@ -89,45 +81,20 @@ Add to your Claude Code MCP settings (`~/.claude/.mcp.json`):
 
 ---
 
-## Commands
+## Architecture
 
-### Run MCP Server
-```bash
-php artisan mcp:serve --server=twitter
-php artisan mcp:serve --server=github
+```
+server.php          ← Entry point (dotenv + DI container + MCP server)
+src/
+├── X/
+│   ├── XClient.php     ← OAuth 1.0a HTTP client for X API v2
+│   └── XTools.php      ← 3 tools with #[McpTool] attributes
+└── GitHub/
+    ├── GitHubClient.php ← REST + GraphQL HTTP client
+    └── GitHubTools.php  ← 9 tools with #[McpTool] attributes
 ```
 
-### Tweet Your Commits
-Post a storytelling tweet about your recent git commits:
-
-```bash
-# Tweet about last commit in current directory
-php artisan twitter:commit
-
-# Tweet about commits in specific repo
-php artisan twitter:commit --path=/path/to/your/repo
-
-# Include multiple commits
-php artisan twitter:commit --commits=3
-
-# Preview without posting
-php artisan twitter:commit --dry-run
-```
-
----
-
-## Adding New MCP Servers
-
-1. Create a new service in `app/Services/`
-2. Register tools in `McpServerCommand.php`
-3. Add configuration to `config/services.php`
-4. Update `.env.example`
-
----
-
-## Scripts
-
-- `composer run setup` — Full project bootstrap
+Tools are auto-discovered via `#[McpTool]` attributes — no manual registration needed.
 
 ---
 
