@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\X;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class XClient
 {
@@ -33,15 +34,25 @@ class XClient
             $payload['reply'] = ['in_reply_to_tweet_id' => $replyTo];
         }
 
-        $response = $this->http->post($url, [
-            'headers' => [
-                'Authorization' => $this->getOAuthHeader('POST', $url),
-                'Content-Type' => 'application/json',
-            ],
-            'json' => $payload,
-        ]);
+        try {
+            $response = $this->http->post($url, [
+                'headers' => [
+                    'Authorization' => $this->getOAuthHeader('POST', $url),
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $payload,
+            ]);
 
-        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+            return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+        } catch (RequestException $e) {
+            $error = ['error' => $e->getMessage()];
+            if ($e->hasResponse()) {
+                $error['status'] = $e->getResponse()->getStatusCode();
+                $error['body'] = json_decode($e->getResponse()->getBody()->getContents(), true)
+                    ?? $e->getResponse()->getBody()->getContents();
+            }
+            return $error;
+        }
     }
 
     public function getTimeline(int $maxResults = 10): array
@@ -56,14 +67,24 @@ class XClient
         $url = "https://api.twitter.com/2/users/{$userId}/reverse_chronological_timeline";
         $params = ['max_results' => $maxResults];
 
-        $response = $this->http->get($url, [
-            'headers' => [
-                'Authorization' => $this->getOAuthHeader('GET', $url, $params),
-            ],
-            'query' => $params,
-        ]);
+        try {
+            $response = $this->http->get($url, [
+                'headers' => [
+                    'Authorization' => $this->getOAuthHeader('GET', $url, $params),
+                ],
+                'query' => $params,
+            ]);
 
-        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+            return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+        } catch (RequestException $e) {
+            $error = ['error' => $e->getMessage()];
+            if ($e->hasResponse()) {
+                $error['status'] = $e->getResponse()->getStatusCode();
+                $error['body'] = json_decode($e->getResponse()->getBody()->getContents(), true)
+                    ?? $e->getResponse()->getBody()->getContents();
+            }
+            return $error;
+        }
     }
 
     public function getMyPosts(int $maxResults = 10): array
@@ -78,27 +99,47 @@ class XClient
         $url = "https://api.twitter.com/2/users/{$userId}/tweets";
         $params = ['max_results' => $maxResults];
 
-        $response = $this->http->get($url, [
-            'headers' => [
-                'Authorization' => $this->getOAuthHeader('GET', $url, $params),
-            ],
-            'query' => $params,
-        ]);
+        try {
+            $response = $this->http->get($url, [
+                'headers' => [
+                    'Authorization' => $this->getOAuthHeader('GET', $url, $params),
+                ],
+                'query' => $params,
+            ]);
 
-        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+            return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+        } catch (RequestException $e) {
+            $error = ['error' => $e->getMessage()];
+            if ($e->hasResponse()) {
+                $error['status'] = $e->getResponse()->getStatusCode();
+                $error['body'] = json_decode($e->getResponse()->getBody()->getContents(), true)
+                    ?? $e->getResponse()->getBody()->getContents();
+            }
+            return $error;
+        }
     }
 
     public function getMe(): array
     {
         $url = 'https://api.twitter.com/2/users/me';
 
-        $response = $this->http->get($url, [
-            'headers' => [
-                'Authorization' => $this->getOAuthHeader('GET', $url),
-            ],
-        ]);
+        try {
+            $response = $this->http->get($url, [
+                'headers' => [
+                    'Authorization' => $this->getOAuthHeader('GET', $url),
+                ],
+            ]);
 
-        return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+            return json_decode($response->getBody()->getContents(), true) ?? ['error' => 'Empty response'];
+        } catch (RequestException $e) {
+            $error = ['error' => $e->getMessage()];
+            if ($e->hasResponse()) {
+                $error['status'] = $e->getResponse()->getStatusCode();
+                $error['body'] = json_decode($e->getResponse()->getBody()->getContents(), true)
+                    ?? $e->getResponse()->getBody()->getContents();
+            }
+            return $error;
+        }
     }
 
     private function getOAuthHeader(string $method, string $url, array $queryParams = []): string
