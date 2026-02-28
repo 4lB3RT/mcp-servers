@@ -4,7 +4,6 @@ Collection of MCP (Model Context Protocol) servers for Claude Code integration.
 
 ![PHP](https://img.shields.io/badge/PHP-8.4%2B-blue?style=flat-square)
 ![Laravel](https://img.shields.io/badge/Laravel-12.x-red?style=flat-square)
-![Docker](https://img.shields.io/badge/Docker-ready-blue?style=flat-square)
 
 ---
 
@@ -90,22 +89,6 @@ Add to your Claude Code MCP settings (`~/.claude/.mcp.json`):
 
 ---
 
-## Docker Quick Start
-
-```bash
-# Copy .env and set your environment variables
-cp .env.example .env
-
-# Start containers (from the docker folder)
-docker compose -f docker/docker-compose.yml up -d
-
-# Run artisan or composer inside the container
-./docker/commands/artisan.sh migrate
-./docker/commands/composer.sh install
-```
-
----
-
 ## Commands
 
 ### Run MCP Server
@@ -145,7 +128,6 @@ php artisan twitter:commit --dry-run
 ## Scripts
 
 - `composer run setup` — Full project bootstrap
-- `composer run dev` — Start all dev services concurrently
 - `composer run test` — Run tests
 
 ---
