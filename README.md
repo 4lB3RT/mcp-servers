@@ -128,7 +128,6 @@ php artisan twitter:commit --dry-run
 ## Scripts
 
 - `composer run setup` — Full project bootstrap
-- `composer run test` — Run tests
 
 ---
 
