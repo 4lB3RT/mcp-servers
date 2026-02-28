@@ -44,7 +44,7 @@ class GitHubService
             $payload['labels'] = $labels;
         }
 
-        $response = Http::withHeaders($this->getHeaders())->post($url, $payload);
+        $response = Http::timeout(15)->withHeaders($this->getHeaders())->post($url, $payload);
 
         return $response->json() ?? ['error' => 'Empty response'];
     }
@@ -62,7 +62,7 @@ class GitHubService
             $params['labels'] = $labels;
         }
 
-        $response = Http::withHeaders($this->getHeaders())->get($url, $params);
+        $response = Http::timeout(15)->withHeaders($this->getHeaders())->get($url, $params);
 
         return $response->json() ?? ['error' => 'Empty response'];
     }
@@ -71,7 +71,7 @@ class GitHubService
     {
         $url = "{$this->baseUrl}/repos/{$this->owner}/{$this->repo}/issues/{$issueNumber}";
 
-        $response = Http::withHeaders($this->getHeaders())->get($url);
+        $response = Http::timeout(15)->withHeaders($this->getHeaders())->get($url);
 
         return $response->json() ?? ['error' => 'Empty response'];
     }
@@ -98,7 +98,7 @@ class GitHubService
             $payload['labels'] = $labels;
         }
 
-        $response = Http::withHeaders($this->getHeaders())->patch($url, $payload);
+        $response = Http::timeout(15)->withHeaders($this->getHeaders())->patch($url, $payload);
 
         return $response->json() ?? ['error' => 'Empty response'];
     }
@@ -112,7 +112,7 @@ class GitHubService
     {
         $url = "{$this->baseUrl}/repos/{$this->owner}/{$this->repo}/issues/{$issueNumber}/comments";
 
-        $response = Http::withHeaders($this->getHeaders())->post($url, ['body' => $body]);
+        $response = Http::timeout(15)->withHeaders($this->getHeaders())->post($url, ['body' => $body]);
 
         return $response->json() ?? ['error' => 'Empty response'];
     }
@@ -186,7 +186,7 @@ class GitHubService
             }
         }";
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(15)->withHeaders([
             'Authorization' => "Bearer {$this->token}",
         ])->post('https://api.github.com/graphql', ['query' => $mutation]);
 
@@ -215,7 +215,7 @@ class GitHubService
             }
         }";
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(15)->withHeaders([
             'Authorization' => "Bearer {$this->token}",
         ])->post('https://api.github.com/graphql', ['query' => $query]);
 
@@ -256,7 +256,7 @@ class GitHubService
             }
         }";
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(15)->withHeaders([
             'Authorization' => "Bearer {$this->token}",
         ])->post('https://api.github.com/graphql', ['query' => $mutation]);
 

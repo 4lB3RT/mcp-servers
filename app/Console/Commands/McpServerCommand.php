@@ -27,7 +27,9 @@ class McpServerCommand extends Command
             try {
                 $request = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
                 $response = $this->handleRequest($request);
-                $this->send($response);
+                if ($response !== null) {
+                    $this->send($response);
+                }
             } catch (\Throwable $e) {
                 $this->sendError(-32603, $e->getMessage());
             }
@@ -194,11 +196,16 @@ class McpServerCommand extends Command
         }
     }
 
-    private function handleRequest(array $request): array
+    private function handleRequest(array $request): ?array
     {
         $method = $request['method'] ?? '';
         $id = $request['id'] ?? null;
         $params = $request['params'] ?? [];
+
+        if ($id === null || str_starts_with($method, 'notifications/')) {
+            $this->log("Notification received: {$method}");
+            return null;
+        }
 
         return match ($method) {
             'initialize' => $this->success($id, [

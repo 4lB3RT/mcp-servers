@@ -29,7 +29,7 @@ class TwitterService
             $payload['reply'] = ['in_reply_to_tweet_id' => $replyTo];
         }
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(15)->withHeaders([
             'Authorization' => $this->getOAuthHeader('POST', $url),
             'Content-Type' => 'application/json',
         ])->post($url, $payload);
@@ -49,7 +49,7 @@ class TwitterService
         $url = "https://api.twitter.com/2/users/{$userId}/reverse_chronological_timeline";
         $params = ['max_results' => $maxResults];
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(15)->withHeaders([
             'Authorization' => $this->getOAuthHeader('GET', $url, $params),
         ])->get($url, $params);
 
@@ -68,7 +68,7 @@ class TwitterService
         $url = "https://api.twitter.com/2/users/{$userId}/tweets";
         $params = ['max_results' => $maxResults];
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(15)->withHeaders([
             'Authorization' => $this->getOAuthHeader('GET', $url, $params),
         ])->get($url, $params);
 
@@ -79,7 +79,7 @@ class TwitterService
     {
         $url = 'https://api.twitter.com/2/users/me';
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(15)->withHeaders([
             'Authorization' => $this->getOAuthHeader('GET', $url),
         ])->get($url);
 
