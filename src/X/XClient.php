@@ -64,7 +64,7 @@ class XClient
             return ['error' => 'Could not get user ID', 'details' => $me];
         }
 
-        $url = "https://api.twitter.com/2/users/{$userId}/reverse_chronological_timeline";
+        $url = "https://api.x.com/2/users/{$userId}/timelines/reverse_chronological";
         $params = ['max_results' => $maxResults];
 
         try {
