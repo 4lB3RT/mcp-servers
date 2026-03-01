@@ -1,6 +1,6 @@
 # MCP Servers
 
-Unified MCP (Model Context Protocol) server for Claude Code integration.
+Independent MCP (Model Context Protocol) servers for Claude Code integration — one for GitHub, one for X.
 
 ![PHP](https://img.shields.io/badge/PHP-8.4%2B-blue?style=flat-square)
 ![MCP SDK](https://img.shields.io/badge/mcp%2Fsdk-0.4-green?style=flat-square)
@@ -71,9 +71,13 @@ Add to `~/.claude.json`:
 ```json
 {
   "mcpServers": {
-    "social": {
+    "github-server": {
       "command": "php",
-      "args": ["/path/to/mcp-servers/server.php"]
+      "args": ["/path/to/mcp-servers/github-server.php"]
+    },
+    "x-server": {
+      "command": "php",
+      "args": ["/path/to/mcp-servers/x-server.php"]
     }
   }
 }
@@ -84,7 +88,8 @@ Add to `~/.claude.json`:
 ## Architecture
 
 ```
-server.php          ← Entry point (dotenv + DI container + MCP server)
+github-server.php       ← GitHub entry point (dotenv + DI + MCP server)
+x-server.php            ← X entry point (dotenv + DI + MCP server)
 src/
 ├── X/
 │   ├── XClient.php     ← OAuth 1.0a HTTP client for X API v2
